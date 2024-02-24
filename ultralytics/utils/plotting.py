@@ -216,9 +216,14 @@ class Annotator:
             # Convert im back to PIL and update draw
             self.fromarray(self.im)
 
-    def rectangle(self, xy, fill=None, outline=None, width=1):
-        """Add rectangle to image (PIL-only)."""
-        self.draw.rectangle(xy, fill, outline, width)
+    def rectangle(self, xy, fill=None, outline=None, width=1, png_path=None):
+        """Add rectangle to image (PIL)."""
+        if png_path:
+            png_image = Image.open(png_path)
+            center_coordinates = (int((xy[2]+xy[0])/2), int((xy[3]+xy[1])/2))
+            self.im.paste(png_image, center_coordinates)
+        else:
+            self.draw.rectangle(xy, fill, outline, width)
 
     def text(self, xy, text, txt_color=(255, 255, 255), anchor='top', box_style=False):
         """Adds text to an image using PIL or cv2."""
