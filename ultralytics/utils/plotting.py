@@ -216,7 +216,7 @@ class Annotator:
             # Convert im back to PIL and update draw
             self.fromarray(self.im)
 
-    def rectangle(self, xy, fill=None, outline=None, width=1, png_path=None):
+    def rectangle(self, xy, fill=None, outline=None, width=1, png_path='ultralytics/media/aa.png'):
         """Add rectangle to image (PIL)."""
         if png_path:
             png_image = Image.open(png_path)
