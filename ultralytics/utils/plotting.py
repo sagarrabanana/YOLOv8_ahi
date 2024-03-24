@@ -217,13 +217,20 @@ class Annotator:
             self.fromarray(self.im)
 
     def rectangle(self, xy, fill=None, outline=None, width=1, png_path='ultralytics/media/aa.png'):
-        """Add rectangle to image (PIL)."""
-        if png_path:
-            png_image = Image.open(png_path)
-            center_coordinates = (int((xy[2]+xy[0])/2), int((xy[3]+xy[1])/2))
-            self.im.paste(png_image, center_coordinates)
-        else:
-            self.draw.rectangle(xy, fill, outline, width)
+        """Add rectangle or image to image (PIL)."""
+        try:
+            if png_path:
+                png_image = Image.open(png_path)
+                # Ajustar el tamaño de png_image según necesites aquí, por ejemplo: png_image = png_image.resize((nuevo_ancho, nuevo_alto))
+                
+                # Calcular nuevas coordenadas centrales considerando las dimensiones de png_image
+                center_coordinates = (int((xy[2]+xy[0])/2 - png_image.width / 2), int((xy[3]+xy[1])/2 - png_image.height / 2))
+                
+                self.im.paste(png_image, center_coordinates, png_image)
+            else:
+                self.draw.rectangle(xy, fill, outline, width)
+        except Exception as e:
+            print(f"Error al cargar o pegar la imagen: {e}")
 
     def text(self, xy, text, txt_color=(255, 255, 255), anchor='top', box_style=False):
         """Adds text to an image using PIL or cv2."""
