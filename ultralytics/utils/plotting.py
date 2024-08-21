@@ -17,6 +17,7 @@ from ultralytics.utils import LOGGER, TryExcept, ops, plt_settings, threaded
 from .checks import check_font, check_version, is_ascii
 from .files import increment_path
 
+path_png = "/home/sagarrabanana/Documentos/ahiestapp_repo/hand_1.png"
 
 class Colors:
     """
@@ -99,38 +100,91 @@ class Annotator:
 
         self.limb_color = colors.pose_palette[[9, 9, 9, 9, 7, 7, 7, 0, 0, 0, 0, 0, 16, 16, 16, 16, 16, 16, 16]]
         self.kpt_color = colors.pose_palette[[16, 16, 16, 16, 16, 0, 0, 0, 0, 0, 0, 9, 9, 9, 9, 9, 9]]
-
-    def box_label(self, box, label='', color=(128, 128, 128), txt_color=(255, 255, 255)):
-        """Add one xyxy box to image with label."""
+    # "/home/sagarrabanana/Documentos/ahiestapp_repo/YOLOv8_ahi/ultralytics/media/aa.png"
+    def box_label(self, box, label='', color=(128, 128, 128), txt_color=(255, 255, 255), png_path=path_png):
+        """Add one xyxy box to image with label or an PNG image with transparency."""
         if isinstance(box, torch.Tensor):
             box = box.tolist()
-        if self.pil or not is_ascii(label):
-            self.draw.rectangle(box, width=self.lw, outline=color)  # box
-            if label:
-                w, h = self.font.getsize(label)  # text width, height
-                outside = box[1] - h >= 0  # label fits outside box
-                self.draw.rectangle(
-                    (box[0], box[1] - h if outside else box[1], box[0] + w + 1,
-                     box[1] + 1 if outside else box[1] + h + 1),
-                    fill=color,
-                )
-                # self.draw.text((box[0], box[1]), label, fill=txt_color, font=self.font, anchor='ls')  # for PIL>8.0
-                self.draw.text((box[0], box[1] - h if outside else box[1]), label, fill=txt_color, font=self.font)
-        else:  # cv2
-            p1, p2 = (int(box[0]), int(box[1])), (int(box[2]), int(box[3]))
-            cv2.rectangle(self.im, p1, p2, color, thickness=self.lw, lineType=cv2.LINE_AA)
-            if label:
-                w, h = cv2.getTextSize(label, 0, fontScale=self.sf, thickness=self.tf)[0]  # text width, height
-                outside = p1[1] - h >= 3
-                p2 = p1[0] + w, p1[1] - h - 3 if outside else p1[1] + h + 3
-                cv2.rectangle(self.im, p1, p2, color, -1, cv2.LINE_AA)  # filled
-                cv2.putText(self.im,
-                            label, (p1[0], p1[1] - 2 if outside else p1[1] + h + 2),
-                            0,
-                            self.sf,
-                            txt_color,
-                            thickness=self.tf,
-                            lineType=cv2.LINE_AA)
+        if png_path:
+            try:
+                png_image = Image.open(png_path).convert("RGBA")
+                
+                # Convertir self.im a una imagen de PIL si es un ndarray de NumPy
+                if isinstance(self.im, np.ndarray):
+                    self.im = Image.fromarray(self.im)
+                
+                # Calcular el centro del rectángulo
+                center_x, center_y = (box[2] + box[0]) / 2, (box[3] + box[1]) / 2
+
+                # Escalar la imagen PNG para que no sobresalga de la imagen base
+                base_width, base_height = self.im.size
+                scale_factor = min((base_width - center_x) / png_image.width, (base_height - center_y) / png_image.height, 1)
+                new_width = int(png_image.width * scale_factor)
+                new_height = int(png_image.height * scale_factor)
+                png_image = png_image.resize((new_width, new_height))
+                
+                # Calcular la nueva posición para pegar. Aseguramos que las coordenadas sean enteros.
+                position = (int(center_x - new_width), int(center_y - new_height // 2))
+                
+                # Pegar la imagen PNG sobre self.im manteniendo la transparencia
+                self.im.paste(png_image, position, png_image)
+            except Exception as e:
+                print(f"Error al cargar o pegar la imagen PNG: {e}, se plaicara el rectangulo habitual")
+                if self.pil or not is_ascii(label):
+                    self.draw.rectangle(box, width=self.lw, outline=color)  # box
+                    if label:
+                        w, h = self.font.getsize(label)  # text width, height
+                        outside = box[1] - h >= 0  # label fits outside box
+                        self.draw.rectangle(
+                            (box[0], box[1] - h if outside else box[1], box[0] + w + 1,
+                            box[1] + 1 if outside else box[1] + h + 1),
+                            fill=color,
+                        )
+                        self.draw.text((box[0], box[1] - h if outside else box[1]), label, fill=txt_color, font=self.font)
+                else:  # cv2, el manejo de transparencias con cv2 es más complicado y requiere un tratamiento diferente
+                    p1, p2 = (int(box[0]), int(box[1])), (int(box[2]), int(box[3]))
+                    cv2.rectangle(self.im, p1, p2, color, thickness=self.lw, lineType=cv2.LINE_AA)
+                    if label:
+                        w, h = cv2.getTextSize(label, 0, fontScale=self.sf, thickness=self.tf)[0]  # text width, height
+                        outside = p1[1] - h >= 3
+                        p2 = p1[0] + w, p1[1] - h - 3 if outside else p1[1] + h + 3
+                        cv2.rectangle(self.im, p1, p2, color, -1, cv2.LINE_AA)  # filled
+                        cv2.putText(self.im,
+                                    label, (p1[0], p1[1] - 2 if outside else p1[1] + h + 2),
+                                    0,
+                                    self.sf,
+                                    txt_color,
+                                    thickness=self.tf,
+                                    lineType=cv2.LINE_AA)
+        else:
+            # Dibujar la caja delimitadora y el texto si no se especificó png_path
+            if self.pil or not is_ascii(label):
+                self.draw.rectangle(box, width=self.lw, outline=color)  # box
+                if label:
+                    w, h = self.font.getsize(label)  # text width, height
+                    outside = box[1] - h >= 0  # label fits outside box
+                    self.draw.rectangle(
+                        (box[0], box[1] - h if outside else box[1], box[0] + w + 1,
+                        box[1] + 1 if outside else box[1] + h + 1),
+                        fill=color,
+                    )
+                    self.draw.text((box[0], box[1] - h if outside else box[1]), label, fill=txt_color, font=self.font)
+            else:  # cv2, el manejo de transparencias con cv2 es más complicado y requiere un tratamiento diferente
+                p1, p2 = (int(box[0]), int(box[1])), (int(box[2]), int(box[3]))
+                cv2.rectangle(self.im, p1, p2, color, thickness=self.lw, lineType=cv2.LINE_AA)
+                if label:
+                    w, h = cv2.getTextSize(label, 0, fontScale=self.sf, thickness=self.tf)[0]  # text width, height
+                    outside = p1[1] - h >= 3
+                    p2 = p1[0] + w, p1[1] - h - 3 if outside else p1[1] + h + 3
+                    cv2.rectangle(self.im, p1, p2, color, -1, cv2.LINE_AA)  # filled
+                    cv2.putText(self.im,
+                                label, (p1[0], p1[1] - 2 if outside else p1[1] + h + 2),
+                                0,
+                                self.sf,
+                                txt_color,
+                                thickness=self.tf,
+                                lineType=cv2.LINE_AA)
+
 
     def masks(self, masks, colors, im_gpu, alpha=0.5, retina_masks=False):
         """
@@ -216,14 +270,9 @@ class Annotator:
             # Convert im back to PIL and update draw
             self.fromarray(self.im)
 
-    def rectangle(self, xy, fill=None, outline=None, width=1, png_path=None):
-        """Add rectangle to image (PIL)."""
-        if png_path:
-            png_image = Image.open(png_path)
-            center_coordinates = (int((xy[2]+xy[0])/2), int((xy[3]+xy[1])/2))
-            self.im.paste(png_image, center_coordinates)
-        else:
-            self.draw.rectangle(xy, fill, outline, width)
+    def rectangle(self, xy, fill=None, outline=None, width=10, png_path='ultralytics/media/aa.png'):
+        """Add rectangle or image to image (PIL)."""
+        self.draw.rectangle(xy, fill, outline, width)
 
     def text(self, xy, text, txt_color=(255, 255, 255), anchor='top', box_style=False):
         """Adds text to an image using PIL or cv2."""
