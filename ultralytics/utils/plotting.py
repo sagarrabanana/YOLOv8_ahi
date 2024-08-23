@@ -124,7 +124,8 @@ class Annotator:
                 png_image = png_image.resize((new_width, new_height))
                 
                 # Calcular la nueva posición para pegar el PNG
-                position = (int(center_x - new_width), int(center_y - new_height // 2))
+                # Aseguramos que la esquina superior derecha del PNG esté en el centro del rectángulo de contorno
+                position = (int(center_x - new_width), int(center_y))
                 
                 # Pegar la imagen PNG sobre self.im manteniendo la transparencia
                 self.im.paste(png_image, position, png_image)
@@ -155,9 +156,6 @@ class Annotator:
                     fill=color,  # Rectángulo macizo
                 )
                 self.draw.text((box[0], box[1] - h if outside else box[1]), label, fill=txt_color, font=self.font)
-
-
-
 
     def masks(self, masks, colors, im_gpu, alpha=0.5, retina_masks=False):
         """
