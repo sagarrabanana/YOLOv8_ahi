@@ -123,13 +123,14 @@ class Annotator:
                 new_height = int(png_image.height * scale_factor)
                 png_image = png_image.resize((new_width, new_height))
                 
-                # Calcular la nueva posición para pegar. Aseguramos que las coordenadas sean enteros.
+                # Calcular la nueva posición para pegar el PNG
+                # Queremos que la esquina superior derecha del PNG esté en el centro del rectángulo
                 position = (int(center_x - new_width), int(center_y - new_height // 2))
                 
                 # Pegar la imagen PNG sobre self.im manteniendo la transparencia
                 self.im.paste(png_image, position, png_image)
             except Exception as e:
-                print(f"Error al cargar o pegar la imagen PNG: {e}, se plaicara el rectangulo habitual")
+                print(f"Error al cargar o pegar la imagen PNG: {e}, se aplicará el rectángulo habitual")
                 if self.pil or not is_ascii(label):
                     self.draw.rectangle(box, width=self.lw, outline=color)  # box
                     if label:
@@ -184,6 +185,7 @@ class Annotator:
                                 txt_color,
                                 thickness=self.tf,
                                 lineType=cv2.LINE_AA)
+
 
 
     def masks(self, masks, colors, im_gpu, alpha=0.5, retina_masks=False):
