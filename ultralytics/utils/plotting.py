@@ -17,7 +17,7 @@ from ultralytics.utils import LOGGER, TryExcept, ops, plt_settings, threaded
 from .checks import check_font, check_version, is_ascii
 from .files import increment_path
 
-path_png = "hand_1.png"
+path_png = "/hand_1.png"
 
 class Colors:
     """
