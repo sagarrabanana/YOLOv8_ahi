@@ -102,7 +102,7 @@ class Annotator:
         self.kpt_color = colors.pose_palette[[16, 16, 16, 16, 16, 0, 0, 0, 0, 0, 0, 9, 9, 9, 9, 9, 9]]
     # "/home/sagarrabanana/Documentos/ahiestapp_repo/YOLOv8_ahi/ultralytics/media/aa.png"
     def box_label(self, box, label='', color=(128, 128, 128), txt_color=(255, 255, 255), png_path=path_png):
-        """Add one xyxy box to image with label or an PNG image with transparency."""
+        """Add one xyxy box to image with label or a PNG image with transparency."""
         if isinstance(box, torch.Tensor):
             box = box.tolist()
         if png_path:
@@ -113,7 +113,7 @@ class Annotator:
                 if isinstance(self.im, np.ndarray):
                     self.im = Image.fromarray(self.im)
                 
-                # Calcular el centro del rectángulo
+                # Calcular el centro del rectángulo de contorno
                 center_x, center_y = (box[2] + box[0]) / 2, (box[3] + box[1]) / 2
 
                 # Escalar la imagen PNG para que no sobresalga de la imagen base
@@ -124,67 +124,38 @@ class Annotator:
                 png_image = png_image.resize((new_width, new_height))
                 
                 # Calcular la nueva posición para pegar el PNG
-                # Queremos que la esquina superior derecha del PNG esté en el centro del rectángulo
                 position = (int(center_x - new_width), int(center_y - new_height // 2))
                 
                 # Pegar la imagen PNG sobre self.im manteniendo la transparencia
                 self.im.paste(png_image, position, png_image)
             except Exception as e:
                 print(f"Error al cargar o pegar la imagen PNG: {e}, se aplicará el rectángulo habitual")
-                if self.pil or not is_ascii(label):
-                    self.draw.rectangle(box, width=self.lw, outline=color)  # box
-                    if label:
-                        w, h = self.font.getsize(label)  # text width, height
-                        outside = box[1] - h >= 0  # label fits outside box
-                        self.draw.rectangle(
-                            (box[0], box[1] - h if outside else box[1], box[0] + w + 1,
-                            box[1] + 1 if outside else box[1] + h + 1),
-                            fill=color,
-                        )
-                        self.draw.text((box[0], box[1] - h if outside else box[1]), label, fill=txt_color, font=self.font)
-                else:  # cv2, el manejo de transparencias con cv2 es más complicado y requiere un tratamiento diferente
-                    p1, p2 = (int(box[0]), int(box[1])), (int(box[2]), int(box[3]))
-                    cv2.rectangle(self.im, p1, p2, color, thickness=self.lw, lineType=cv2.LINE_AA)
-                    if label:
-                        w, h = cv2.getTextSize(label, 0, fontScale=self.sf, thickness=self.tf)[0]  # text width, height
-                        outside = p1[1] - h >= 3
-                        p2 = p1[0] + w, p1[1] - h - 3 if outside else p1[1] + h + 3
-                        cv2.rectangle(self.im, p1, p2, color, -1, cv2.LINE_AA)  # filled
-                        cv2.putText(self.im,
-                                    label, (p1[0], p1[1] - 2 if outside else p1[1] + h + 2),
-                                    0,
-                                    self.sf,
-                                    txt_color,
-                                    thickness=self.tf,
-                                    lineType=cv2.LINE_AA)
-        else:
-            # Dibujar la caja delimitadora y el texto si no se especificó png_path
-            if self.pil or not is_ascii(label):
-                self.draw.rectangle(box, width=self.lw, outline=color)  # box
+                # Dibujar el rectángulo de contorno
+                self.draw.rectangle(box, width=self.lw, outline=color)  # Rectángulo de contorno
+                # Dibujar el rectángulo del texto si hay una etiqueta
                 if label:
-                    w, h = self.font.getsize(label)  # text width, height
-                    outside = box[1] - h >= 0  # label fits outside box
+                    w, h = self.font.getsize(label)  # Ancho y alto del texto
+                    outside = box[1] - h >= 0  # ¿Cabe el texto fuera del rectángulo de contorno?
                     self.draw.rectangle(
                         (box[0], box[1] - h if outside else box[1], box[0] + w + 1,
                         box[1] + 1 if outside else box[1] + h + 1),
-                        fill=color,
+                        fill=color,  # Rectángulo macizo
                     )
                     self.draw.text((box[0], box[1] - h if outside else box[1]), label, fill=txt_color, font=self.font)
-            else:  # cv2, el manejo de transparencias con cv2 es más complicado y requiere un tratamiento diferente
-                p1, p2 = (int(box[0]), int(box[1])), (int(box[2]), int(box[3]))
-                cv2.rectangle(self.im, p1, p2, color, thickness=self.lw, lineType=cv2.LINE_AA)
-                if label:
-                    w, h = cv2.getTextSize(label, 0, fontScale=self.sf, thickness=self.tf)[0]  # text width, height
-                    outside = p1[1] - h >= 3
-                    p2 = p1[0] + w, p1[1] - h - 3 if outside else p1[1] + h + 3
-                    cv2.rectangle(self.im, p1, p2, color, -1, cv2.LINE_AA)  # filled
-                    cv2.putText(self.im,
-                                label, (p1[0], p1[1] - 2 if outside else p1[1] + h + 2),
-                                0,
-                                self.sf,
-                                txt_color,
-                                thickness=self.tf,
-                                lineType=cv2.LINE_AA)
+        else:
+            # Dibujar la caja delimitadora y el texto si no se especificó png_path
+            # Dibujar el rectángulo de contorno
+            self.draw.rectangle(box, width=self.lw, outline=color)  # Rectángulo de contorno
+            if label:
+                w, h = self.font.getsize(label)  # Ancho y alto del texto
+                outside = box[1] - h >= 0  # ¿Cabe el texto fuera del rectángulo de contorno?
+                self.draw.rectangle(
+                    (box[0], box[1] - h if outside else box[1], box[0] + w + 1,
+                    box[1] + 1 if outside else box[1] + h + 1),
+                    fill=color,  # Rectángulo macizo
+                )
+                self.draw.text((box[0], box[1] - h if outside else box[1]), label, fill=txt_color, font=self.font)
+
 
 
 
