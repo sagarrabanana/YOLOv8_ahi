@@ -23,7 +23,7 @@ import os
 current_dir = os.path.dirname(__file__)
 
 # Definir el path de la imagen hand_1.png
-png_path = os.path.join(current_dir, 'hand_1.png')
+path_png = os.path.join(current_dir, 'hand_1.png')
 
 class Colors:
     """
